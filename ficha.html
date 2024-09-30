@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha Clínica</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e9f3f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 90%;
+            margin: 20px;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #b0c4de;
+            background-color: #f7f9fc;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #5dade2;
+            outline: none;
+        }
+        .button-group {
+            text-align: right;
+        }
+        .button-group button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .button-group button.save {
+            background-color: #3498db;
+            color: white;
+        }
+        .button-group button.reset {
+            background-color: #3ce759;
+            color: white;
+        }
+        .button-group button.delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .button-group button.search {
+            background-color: #1abc9c;
+            color: white;
+        }
+        .button-group button.close {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .result-container {
+            margin-top: 20px;
+            background-color: #f7f9fc;
+            padding: 10px;
+            border: 1px solid #b0c4de;
+            border-radius: 8px;
+            display: none;
+            position: relative;
+        }
+        .result-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+        .close-results {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: -15px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="color: #2c3e50;">Ficha Médica</h2>
+        <form id="medicalForm">
+            <label for="rut">RUT:</label>
+            <input type="text" id="rut" name="rut" required>
+            <div id="error-rut" class="error-message"></div>
+
+            <label for="nombres">Nombres:</label>
+            <input type="text" id="nombres" name="nombres" required>
+            <div id="error-nombres" class="error-message"></div>
+
+            <label for="apellidos">Apellidos:</label>
+            <input type="text" id="apellidos" name="apellidos" required>
+            <div id="error-apellidos" class="error-message"></div>
+
+            <label for="direccion">Dirección:</label>
+            <input type="text" id="direccion" name="direccion" required>
+            <div id="error-direccion" class="error-message"></div>
+
+            <label for="ciudad">Ciudad:</label>
+            <input type="text" id="ciudad" name="ciudad" required>
+            <div id="error-ciudad" class="error-message"></div>
+
+            <label for="telefono">Teléfono:</label>
+            <input type="tel" id="telefono" name="telefono" required>
+            <div id="error-telefono" class="error-message"></div>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <div id="error-email" class="error-message"></div>
+
+            <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required>
+            <div id="error-fecha_nacimiento" class="error-message"></div>
+
+            <label for="estado_civil">Estado Civil:</label>
+            <select id="estado_civil" name="estado_civil" required>
+                <option value="soltero">Soltero</option>
+                <option value="casado">Casado</option>
+                <option value="divorciado">Divorciado</option>
+                <option value="viudo">Viudo</option>
+            </select>
+
+            <label for="comentarios">Comentarios:</label>
+            <textarea id="comentarios" name="comentarios" rows="4"></textarea>
+
+            <div class="button-group">
+                <button type="button" class="save" onclick="saveForm()">Guardar</button>
+                <button type="reset" class="reset">Limpiar</button>
+                <button type="button" class="delete" onclick="deleteRecord()">Eliminar</button>
+            </div>
+
+            <h3 style="color: #2c3e50;">Buscar Ficha por Apellido</h3>
+            <input type="text" id="search_apellido" placeholder="Ingrese apellido">
+            <button type="button" class="search" onclick="searchByLastName()">Buscar</button>
+        </form>
+
+        <div id="result-container" class="result-container">
+            <button class="close-results" onclick="closeResults()">Cerrar</button>
+            <h4>Resultados de la Búsqueda:</h4>
+            <div id="result-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const registros = [];
+
+        function clearErrors() {
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(element => element.textContent = '');
+        }
+
+        function validateForm() {
+            clearErrors();
+            let isValid = true;
+
+            const rut = document.getElementById('rut').value;
+            const nombres = document.getElementById('nombres').value;
+            const apellidos = document.getElementById('apellidos').value;
+            const direccion = document.getElementById('direccion').value;
+            const ciudad = document.getElementById('ciudad').value;
+            const telefono = document.getElementById('telefono').value;
+            const email = document.getElementById('email').value;
+            const fecha_nacimiento = document.getElementById('fecha_nacimiento').value;
+
+            if (!rut) {
+                document.getElementById('error-rut').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            if (!nombres) {
+                document.getElementById('error-nombres').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            if (!apellidos) {
+                document.getElementById('error-apellidos').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            if (!direccion) {
+                document.getElementById('error-direccion').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            if (!ciudad) {
+                document.getElementById('error-ciudad').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            if (!telefono || isNaN(telefono)) {
+                document.getElementById('error-telefono').textContent = 'Ingrese un número de teléfono válido';
+                isValid = false;
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('error-email').textContent = 'Ingrese una dirección de email válida';
+                isValid = false;
+            }
+
+            if (!fecha_nacimiento) {
+                document.getElementById('error-fecha_nacimiento').textContent = 'Este campo es obligatorio';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function saveForm() {
+            if (!validateForm()) return;
+
+            const rut = document.getElementById('rut').value;
+            const nombres = document.getElementById('nombres').value;
+            const apellidos = document.getElementById('apellidos').value;
+            const direccion = document.getElementById('direccion').value;
+            const ciudad = document.getElementById('ciudad').value;
+            const telefono = document.getElementById('telefono').value;
+            const email = document.getElementById('email').value;
+            const fecha_nacimiento = document.getElementById('fecha_nacimiento').value;
+            const estado_civil = document.getElementById('estado_civil').value;
+            const comentarios = document.getElementById('comentarios').value;
+
+            const registroExistente = registros.find(reg => reg.rut === rut);
+
+            if (registroExistente) {
+                if (confirm('El registro ya existe. ¿Desea sobrescribirlo?')) {
+                    Object.assign(registroExistente, {
+                        nombres, apellidos, direccion, ciudad, telefono, email, fecha_nacimiento, estado_civil, comentarios
+                    });
+                    alert('Registro actualizado exitosamente.');
+                }
+            } else {
+                registros.push({ rut, nombres, apellidos, direccion, ciudad, telefono, email, fecha_nacimiento, estado_civil, comentarios });
+                alert('Registro guardado exitosamente.');
+            }
+        }
+
+        function deleteRecord() {
+            const rut = document.getElementById('rut').value;
+            const index = registros.findIndex(reg => reg.rut === rut);
+
+            if (index !== -1) {
+                registros.splice(index, 1);
+                alert('Registro eliminado exitosamente.');
+                document.getElementById('medicalForm').reset();
+            } else {
+                alert('Registro no encontrado.');
+            }
+        }
+
+        function searchByLastName() {
+            const apellido = document.getElementById('search_apellido').value.toLowerCase();
+            const resultados = registros.filter(reg => reg.apellidos.toLowerCase().includes(apellido));
+
+            const resultContainer = document.getElementById('result-container');
+            const resultList = document.getElementById('result-list');
+            resultList.innerHTML = ''; 
+
+            if (resultados.length > 0) {
+                resultados.forEach(registro => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.textContent = `RUT: ${registro.rut} - Nombres: ${registro.nombres} - Apellidos: ${registro.apellidos}`;
+                    resultList.appendChild(item);
+                });
+                resultContainer.style.display = 'block'; 
+            } else {
+                alert('No se encontró ningún registro con ese apellido.');
+                resultContainer.style.display = 'none'; 
+            }
+        }
+
+        function closeResults() {
+            document.getElementById('result-container').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
